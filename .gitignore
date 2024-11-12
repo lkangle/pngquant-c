@@ -10,3 +10,9 @@ pngquant
 !output/*
 *-fs8.png
 *.h.included
+
+*.so
+*.lo
+zconf.h
+*.so.*
+*.log
