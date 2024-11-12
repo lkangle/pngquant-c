@@ -36,6 +36,14 @@
 #  endif
 #endif
 
+#ifndef USE_NEON
+#  if defined(__ARM_NEON)
+#    define USE_NEON 1
+#  else
+#    define USE_NEON 0
+#  endif
+#endif
+
 #if USE_SSE
 #  include <xmmintrin.h>
 #  ifdef _MSC_VER
@@ -44,35 +52,38 @@
 #  else
 #    define SSE_ALIGN __attribute__ ((aligned (16)))
 #    if defined(__i386__) && defined(__PIC__)
-#       define cpuid(func,ax,bx,cx,dx)\
-        __asm__ __volatile__ ( \
-        "push %%ebx\n" \
-        "cpuid\n" \
-        "mov %%ebx, %1\n" \
-        "pop %%ebx\n" \
-        : "=a" (ax), "=r" (bx), "=c" (cx), "=d" (dx) \
-        : "a" (func));
+#      define cpuid(func,ax,bx,cx,dx) \
+         __asm__ __volatile__ ( \
+         "push %%ebx\n" \
+         "cpuid\n" \
+         "mov %%ebx, %1\n" \
+         "pop %%ebx\n" \
+         : "=a" (ax), "=r" (bx), "=c" (cx), "=d" (dx) \
+         : "a" (func));
 #    else
-#       define cpuid(func,ax,bx,cx,dx)\
-        __asm__ __volatile__ ("cpuid":\
-        "=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func));
+#      define cpuid(func,ax,bx,cx,dx) \
+         __asm__ __volatile__ ("cpuid" : \
+         "=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func));
 #    endif
-#endif
+#  endif
+#elif USE_NEON
+#  include <arm_neon.h>
+#  define SSE_ALIGN __attribute__ ((aligned (16)))
 #else
 #  define SSE_ALIGN
 #endif
 
 #if defined(__GNUC__) || defined (__llvm__)
-#define ALWAYS_INLINE __attribute__((always_inline)) inline
-#define NEVER_INLINE __attribute__ ((noinline))
+#  define ALWAYS_INLINE __attribute__((always_inline)) inline
+#  define NEVER_INLINE __attribute__ ((noinline))
 #elif defined(_MSC_VER)
-#define inline __inline
-#define restrict __restrict
-#define ALWAYS_INLINE __forceinline
-#define NEVER_INLINE __declspec(noinline)
+#  define inline __inline
+#  define restrict __restrict
+#  define ALWAYS_INLINE __forceinline
+#  define NEVER_INLINE __declspec(noinline)
 #else
-#define ALWAYS_INLINE inline
-#define NEVER_INLINE
+#  define ALWAYS_INLINE inline
+#  define NEVER_INLINE
 #endif
 
 /* from pam.h */
@@ -192,7 +203,7 @@ inline static float colordifference(f_pixel px, f_pixel py)
 
     // y.a - x.a
     __m128 alphas = _mm_sub_ss(vpy, vpx);
-    alphas = _mm_shuffle_ps(alphas,alphas,0); // copy first to all four
+    alphas = _mm_shuffle_ps(alphas, alphas, 0); // copy first to all four
 
     __m128 onblack = _mm_sub_ps(vpx, vpy); // x - y
     __m128 onwhite = _mm_add_ps(onblack, alphas); // x - y + (y.a - x.a)
@@ -207,10 +218,33 @@ inline static float colordifference(f_pixel px, f_pixel py)
     const __m128 sum = _mm_add_ss(maxhl, _mm_shuffle_ps(tmp, tmp, 1));
 
     const float res = _mm_cvtss_f32(sum);
-    assert(fabs(res - colordifference_stdc(px,py)) < 0.001);
+    assert(fabs(res - colordifference_stdc(px, py)) < 0.001);
     return res;
+
+#elif USE_NEON
+    const float32x4_t vpx = vld1q_f32((const float*)&px);
+    const float32x4_t vpy = vld1q_f32((const float*)&py);
+
+    float32x4_t alphas = vsubq_f32(vpy, vpx);
+    alphas = vdupq_n_f32(vgetq_lane_f32(alphas, 0)); // broadcast alpha
+
+    float32x4_t onblack = vsubq_f32(vpx, vpy); // x - y
+    float32x4_t onwhite = vaddq_f32(onblack, alphas); // x - y + (y.a - x.a)
+
+    onblack = vmulq_f32(onblack, onblack);
+    onwhite = vmulq_f32(onwhite, onwhite);
+    float32x4_t max = vaddq_f32(onwhite, onblack);
+
+    float32x2_t maxhl = vget_high_f32(max);
+    float32x2_t tmp = vpadd_f32(vget_low_f32(max), maxhl);
+    float32x2_t sum = vpadd_f32(tmp, tmp);
+
+    float res = vget_lane_f32(sum, 0);
+    assert(fabs(res - colordifference_stdc(px, py)) < 0.001);
+    return res;
+
 #else
-    return colordifference_stdc(px,py);
+    return colordifference_stdc(px, py);
 #endif
 }
 

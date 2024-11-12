@@ -53,3 +53,7 @@ If you want to use pngquant's conversion algorithm without loading/saving PNG
 files, then you can run `make` in the `lib/` directory.
 The library doesn't need libpng or zlib.
 
+在arm下 如苹果m1
+
+./configure --disable-sse --without-cocoa --enable-neon
+make

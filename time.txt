@@ -1,0 +1,16 @@
+压缩4.2m的图片耗时  bg2.png
+
+使用simd  耗时降低9.4%
+3.18s user 0.02s system 99% cpu 3.205 total
+
+不用simd
+3.51s user 0.02s system 98% cpu 3.569 total
+
+
+压缩1.19m图片  bg1.png
+
+使用simd 降低19.1%
+1.91s user 0.01s system 99% cpu 1.925 total
+
+不用simd
+2.36s user 0.01s system 99% cpu 2.383 total

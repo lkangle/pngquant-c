@@ -63,6 +63,9 @@ fi
     --enable-sse)
         SSE=1
         ;;
+    --enable-neon)
+        NEON=1
+        ;;
     --disable-sse)
         SSE=0
         ;;
@@ -259,6 +262,16 @@ if [[ "$SSE" -eq 1 ]]; then
 elif [[ "$SSE" -eq 0 ]]; then
     status "SSE" "no"
     cflags "-DUSE_SSE=0"
+fi
+
+# 添加 ARM 支持，检测 NEON
+if [[ "$NEON" -eq 1 ]]; then
+    status "ARM NEON" "yes"
+    cflags "-DUSE_NEON=1"
+    cflags "-mfpu=neon"
+elif [[ "$NEON" -eq 0 ]]; then
+    status "ARM NEON" "no"
+    cflags "-DUSE_NEON=0"
 fi
 
 # OpenMP

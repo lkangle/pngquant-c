@@ -167,6 +167,16 @@ inline static bool is_sse_available()
 }
 #endif
 
+#if USE_NEON
+inline static bool is_neon_available() {
+    #if defined(__ARM_NEON)
+        return true;
+    #else
+        return false;
+    #endif
+}
+#endif
+
 /* make it clear in backtrace when user-supplied handle points to invalid memory */
 NEVER_INLINE LIQ_EXPORT bool liq_crash_if_invalid_handle_pointer_given(const liq_attr *user_supplied_pointer, const char *const expected_magic_header);
 LIQ_EXPORT bool liq_crash_if_invalid_handle_pointer_given(const liq_attr *user_supplied_pointer, const char *const expected_magic_header)
@@ -418,6 +428,11 @@ LIQ_EXPORT liq_attr* liq_attr_create_with_allocator(void* (*custom_malloc)(size_
 {
 #if USE_SSE
     if (!is_sse_available()) {
+        return NULL;
+    }
+#endif
+#if USE_NEON
+    if (!is_neon_available()) {
         return NULL;
     }
 #endif
