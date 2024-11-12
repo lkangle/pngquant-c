@@ -9,3 +9,4 @@ pngquant
 *.exe
 !output/*
 *-fs8.png
+*.h.included
