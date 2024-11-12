@@ -268,7 +268,7 @@ fi
 if [[ "$NEON" -eq 1 ]]; then
     status "ARM NEON" "yes"
     cflags "-DUSE_NEON=1"
-    cflags "-mfpu=neon"
+    # cflags "-mfpu=neon"  # 使用brew安装的gcc不支持该参数
 elif [[ "$NEON" -eq 0 ]]; then
     status "ARM NEON" "no"
     cflags "-DUSE_NEON=0"
@@ -294,8 +294,8 @@ fi
 
 # Cocoa
 if [[ "$OSTYPE" =~ "darwin" ]]; then
-    cflags "-mmacosx-version-min=10.6"
-    lflags "-mmacosx-version-min=10.6"
+    # cflags "-mmacosx-version-min=10.6"
+    # lflags "-mmacosx-version-min=10.6"
 
     if [ "$COCOA_READER" != 0 ] && "$CC" 2>/dev/null 1>/dev/null -xc -E <(echo "#import <Cocoa/Cocoa.h>"); then
         COCOA_READER=1

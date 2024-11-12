@@ -6,6 +6,7 @@
     },
     "files.associations": {
         "rwpng.h": "c",
-        "setjmp.h": "c"
+        "setjmp.h": "c",
+        "stdio.h": "c"
     }
 }

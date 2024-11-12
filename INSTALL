@@ -53,7 +53,7 @@ If you want to use pngquant's conversion algorithm without loading/saving PNG
 files, then you can run `make` in the `lib/` directory.
 The library doesn't need libpng or zlib.
 
-在arm下 如苹果m1
+在m1的macos下使用公版gcc，可以启用neon和openmp
 
-./configure --disable-sse --without-cocoa --enable-neon
+./configure --disable-sse --without-cocoa --enable-neon --with-openmp CC=gcc-14
 make
