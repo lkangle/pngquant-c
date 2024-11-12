@@ -20,3 +20,10 @@ simd+openmp 降低52.4%
 
 不用simd
 2.36s user 0.01s system 99% cpu 2.383 total
+
+
+## 压缩输出文件大小
+windows
+bg1 --> 314,735字节 307.36KB
+bg2 --> 1,002,124字节  978.64KB
+

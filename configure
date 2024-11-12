@@ -280,15 +280,19 @@ elif [[ "$NEON" -eq 0 ]]; then
     cflags "-DUSE_NEON=0"
 fi
 
+OMP_TMP=tmp2.c
+echo "#ifdef _OPENMP
+#include <omp.h>
+#endif" > "$OMP_TMP"
+
 # OpenMP
 if [ -n "$OPENMP" ]; then
-    if [[ "$("$CC" -xc -E -fopenmp <(echo "#ifdef _OPENMP
-           #include <omp.h>
-           #endif") 2>&1)" =~ "omp_get_thread_num" ]]; then
+    if "$CC" -xc -E -fopenmp "$OMP_TMP" 2>&1 | grep -q "omp_get_thread_num"; then
         cflags "-fopenmp"
         lflags "-fopenmp"
         status "OpenMP" "yes"
     else
+        rm -f "$OMP_TMP"
         error "OpenMP" "not supported by compiler (please install a compiler that supports OpenMP (e.g. gcc) and specify it with the CC= argument)"
     fi
 else
@@ -297,6 +301,8 @@ else
     conditional_cflags "-wd3180" # ICC
     status "OpenMP" "no"
 fi
+
+rm -f "$OMP_TMP"
 
 # Cocoa
 if [[ "$OSTYPE" =~ "darwin" ]]; then
