@@ -223,10 +223,16 @@ error() {
 
 echo
 
+TEMP_C_FILE=tmp1.c
+echo 'int main(){}' > $TEMP_C_FILE
+
 # basic check
-if ! echo "int main(){}" | "$CC" -xc -std=c99 -o /dev/null - &> /dev/null; then
+if ! "$CC" -xc -std=c99 "$TEMP_C_FILE" -o tmp &> /dev/null; then
+    rm -f "$TEMP_C_FILE"
     error "Compiler" "$CC failed to compile anything (make sure it's installed and supports C99)"
 fi
+
+rm -f tmp tmp.exe "$TEMP_C_FILE"
 
 status "Compiler" "$CC"
 
