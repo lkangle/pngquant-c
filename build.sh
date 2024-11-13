@@ -3,54 +3,58 @@
 ROOT=$(pwd)
 
 MAKE=make
-CMAKE_G="Unix Makefiles"
-ZLIB="libz.so"
 CC=gcc
 SIMD_OPTION="--enable-sse"
 
 OS=$(uname -s)
+LIB_SUFFIX=(".a" ".so" ".dylib")
 
 if [[ "$OS" == "MINGW"* ]]; then
     MAKE="mingw32-make"
-    CMAKE_G="MinGW Makefiles"
-    # ZLIB="libz.a"
-    echo "This is a Windows environment ${MAKE} ${CMAKE_G}"
+    echo "===> Windows: ${MAKE}"
 elif [[ "$OS" == "Darwin" ]]; then
     CC=gcc-14
     SIMD_OPTION="--disable-sse --enable-neon"
-    ZLIB="libz.a"
-    echo "This is a Macos environment"
+    echo "===> MacOS"
 else
-    echo "This is a Linux environment"
+    echo "===> Linux"
 fi
 
 # build zlib 1.3.1
-if [ -f "$ROOT/zlib-1.3.1/$ZLIB" ]; then
-    echo "$ZLIB already exists, skipping zlib build."
-else
+for SUFFIX in "${LIB_SUFFIX[@]}"; do
+    if [[ -f "$ROOT/zlib-1.3.1/libz$SUFFIX" ]]; then
+        echo "libz$SUFFIX already exists, skipping zlib build."
+        ZLIB_FOUND=1
+        break
+    fi
+done
+
+if [[ "$ZLIB_FOUND" -ne 1 ]]; then
     cd $ROOT/zlib-1.3.1
+    $MAKE distclean
     chmod +x ./configure
     ./configure
     $MAKE
 fi
 
-if [[ "$OS" != "Darwin" ]]; then
-    # build libpng 1.6.17
-    if [ -f "$ROOT/libpng-1.6.17/build/libpng.a" ]; then
-        echo "libpng.a already exists, skipping libpng build."
-    else
-        cd $ROOT/libpng-1.6.17
-        rm -fr build
-        mkdir build
-        cd build
-        cmake -G "${CMAKE_G}" -DPNG_STATIC=ON -DZLIB_LIBRARY=$ROOT/zlib-1.3.1/$ZLIB -DZLIB_INCLUDE_DIR=$ROOT/zlib-1.3.1 ..
-        $MAKE
+# build libpng 1.6.17
+for SUFFIX in "${LIB_SUFFIX[@]}"; do
+    if [[ -f "$ROOT/libpng-1.6.17/libpng$SUFFIX" ]]; then
+        echo "libpng$SUFFIX already exists, skipping zlib build."
+        LIBPNG_FOUND=1
+        break
     fi
-else 
-    echo "macos, skipping libpng build."
+done
+
+if [[ "$LIBPNG_FOUND" -ne 1 ]]; then
+    cd $ROOT/libpng-1.6.17
+    $MAKE clean
+    chmod +x ./configure
+    ./configure --disable-shared --enable-static --with-zlib-prefix=$ROOT/zlib-1.3.1
+    $MAKE
 fi
 
-cd $ROOT
-chmod +x $ROOT/configure
-./configure --with-openmp ${SIMD_OPTION} --without-cocoa --without-lcms2 CC=${CC}
-$MAKE
+# cd $ROOT
+# chmod +x $ROOT/configure
+# ./configure --with-openmp ${SIMD_OPTION} --without-cocoa --without-lcms2 CC=${CC}
+# $MAKE

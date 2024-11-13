@@ -11,8 +11,9 @@ pngquant
 *-fs8.png
 *.h.included
 
-*.so
+*.so 
 *.lo
-zconf.h
 *.so.*
 *.log
+*.pc
+.dirstamp
