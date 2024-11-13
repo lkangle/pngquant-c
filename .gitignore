@@ -17,3 +17,8 @@ pngquant
 *.log
 *.pc
 .dirstamp
+*.out
+*.la
+*.lai
+*.vers
+.libs

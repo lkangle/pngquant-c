@@ -54,7 +54,9 @@ if [[ "$LIBPNG_FOUND" -ne 1 ]]; then
     $MAKE
 fi
 
-# cd $ROOT
-# chmod +x $ROOT/configure
-# ./configure --with-openmp ${SIMD_OPTION} --without-cocoa --without-lcms2 CC=${CC}
-# $MAKE
+# build pngquant
+cd $ROOT
+$MAKE clean
+chmod +x $ROOT/configure
+./configure --with-openmp ${SIMD_OPTION} --without-cocoa --without-lcms2 CC=${CC}
+$MAKE
