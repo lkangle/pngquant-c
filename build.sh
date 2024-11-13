@@ -49,7 +49,7 @@ done
 if [[ "$LIBPNG_FOUND" -ne 1 ]]; then
     cd $ROOT/libpng-1.6.17
     $MAKE clean
-    chmod +x ./configure
+    chmod +x ./configure ./install-sh
     ./configure --disable-shared --enable-static --with-zlib-prefix=$ROOT/zlib-1.3.1
     $MAKE
 fi
