@@ -2,6 +2,7 @@
 
 ROOT=$(pwd)
 
+CMAKE=cmake
 MAKE=make
 CC=gcc
 SIMD_OPTION="--enable-sse"
@@ -51,6 +52,21 @@ if [[ "$LIBPNG_FOUND" -ne 1 ]]; then
     $MAKE clean
     chmod +x ./configure ./install-sh
     ./configure --disable-shared --enable-static --with-zlib-prefix=$ROOT/zlib-1.3.1
+    $MAKE
+fi
+
+# build advpng
+if [[ -f "$ROOT/libadvpng/build/libadvpng.a" ]]; then
+    echo "libadvpng.a already exists, skipping libadvpng build."
+    ADVPNG_FOUND=1
+    break
+fi
+
+if [[ "$ADVPNG_FOUND" -ne 1 ]]; then
+    cd $ROOT/libadvpng
+    rm -fr build
+    $CMAKE -S . -B build
+    cd build
     $MAKE
 fi
 
