@@ -39,8 +39,8 @@ fi
 
 # build libpng 1.6.17
 for SUFFIX in "${LIB_SUFFIX[@]}"; do
-    if [[ -f "$ROOT/libpng-1.6.17/libpng$SUFFIX" ]]; then
-        echo "libpng$SUFFIX already exists, skipping zlib build."
+    if [[ -f "$ROOT/libpng-1.6.17/.libs/libpng16$SUFFIX" ]]; then
+        echo "libpng$SUFFIX already exists, skipping libpng build."
         LIBPNG_FOUND=1
         break
     fi
