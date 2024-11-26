@@ -15,7 +15,7 @@ if [[ "$OS" == "MINGW"* ]]; then
     echo "===> Windows: ${MAKE}"
 elif [[ "$OS" == "Darwin" ]]; then
     CC=gcc-14
-    SIMD_OPTION="--disable-sse --enable-neon"
+    SIMD_OPTION="--disable-sse"
     echo "===> MacOS"
 else
     echo "===> Linux"
