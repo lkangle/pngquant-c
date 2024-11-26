@@ -64,12 +64,12 @@ The default behavior if the output file exists is to skip the conversion;\n\
 use --force to overwrite. See man page for full list of options.\n"
 
 
+#include <getopt.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <getopt.h>
 #include <unistd.h>
 #include "advpng.h"
 
@@ -77,8 +77,8 @@ extern char *optarg;
 extern int optind, opterr;
 
 #if defined(WIN32) || defined(__WIN32__)
-#  include <fcntl.h>    /* O_BINARY */
-#  include <io.h>   /* setmode() */
+#include <fcntl.h> /* O_BINARY */
+#include <io.h>    /* setmode() */
 #endif
 
 #ifdef _OPENMP
@@ -98,8 +98,8 @@ struct pngquant_options {
     void *log_callback_user_info;
     float floyd;
     bool using_stdin, using_stdout, force, fast_compression, ie_mode,
-        min_quality_limit, skip_if_larger,
-        verbose;
+            min_quality_limit, skip_if_larger,
+            verbose;
 };
 
 static pngquant_error prepare_output_image(liq_result *result, liq_image *input_image, png8_image *output_image);
@@ -109,12 +109,11 @@ static pngquant_error write_image(png8_image *output_image, png24_image *output_
 static char *add_filename_extension(const char *filename, const char *newext);
 static bool file_exists(const char *outname);
 
-static void verbose_printf(struct pngquant_options *context, const char *fmt, ...)
-{
+static void verbose_printf(struct pngquant_options *context, const char *fmt, ...) {
     if (context->log_callback) {
         va_list va;
         va_start(va, fmt);
-        int required_space = vsnprintf(NULL, 0, fmt, va)+1; // +\0
+        int required_space = vsnprintf(NULL, 0, fmt, va) + 1;// +\0
         va_end(va);
 
         char buf[required_space];
@@ -126,8 +125,7 @@ static void verbose_printf(struct pngquant_options *context, const char *fmt, ..
     }
 }
 
-static void log_callback(const liq_attr *attr, const char *msg, void* user_info)
-{
+static void log_callback(const liq_attr *attr, const char *msg, void *user_info) {
     fprintf(stderr, "%s\n", msg);
 }
 
@@ -138,8 +136,7 @@ struct buffered_log {
     char buf[LOG_BUFFER_SIZE];
 };
 
-static void log_callback_buferred_flush(const liq_attr *attr, void *context)
-{
+static void log_callback_buferred_flush(const liq_attr *attr, void *context) {
     struct buffered_log *log = context;
     if (log->buf_used) {
         fwrite(log->buf, 1, log->buf_used, stderr);
@@ -148,16 +145,15 @@ static void log_callback_buferred_flush(const liq_attr *attr, void *context)
     }
 }
 
-static void log_callback_buferred(const liq_attr *attr, const char *msg, void* context)
-{
+static void log_callback_buferred(const liq_attr *attr, const char *msg, void *context) {
     struct buffered_log *log = context;
     int len = strlen(msg);
-    if (len > LOG_BUFFER_SIZE-2) len = LOG_BUFFER_SIZE-2;
+    if (len > LOG_BUFFER_SIZE - 2) len = LOG_BUFFER_SIZE - 2;
 
     if (len > LOG_BUFFER_SIZE - log->buf_used - 2) log_callback_buferred_flush(attr, log);
     memcpy(&log->buf[log->buf_used], msg, len);
-    log->buf_used += len+1;
-    log->buf[log->buf_used-1] = '\n';
+    log->buf_used += len + 1;
+    log->buf[log->buf_used - 1] = '\n';
     log->buf[log->buf_used] = '\0';
 }
 #endif
@@ -182,8 +178,7 @@ static void print_full_version(FILE *fd)
     fputs("\n", fd);
 }
 
-static void print_usage(FILE *fd)
-{
+static void print_usage(FILE *fd) {
     fputs(PNGQUANT_USAGE, fd);
 }
 
@@ -195,25 +190,25 @@ static void print_usage(FILE *fd)
  *
  * where N,M are numbers between 0 (lousy) and 100 (perfect)
  */
-static bool parse_quality(const char *quality, liq_attr *options, bool *min_quality_limit)
-{
+static bool parse_quality(const char *quality, liq_attr *options, bool *min_quality_limit) {
     long limit, target;
-    const char *str = quality; char *end;
+    const char *str = quality;
+    char *end;
 
     long t1 = strtol(str, &end, 10);
     if (str == end) return false;
     str = end;
 
-    if ('\0' == end[0] && t1 < 0) { // quality="-%d"
+    if ('\0' == end[0] && t1 < 0) {// quality="-%d"
         target = -t1;
         limit = 0;
-    } else if ('\0' == end[0]) { // quality="%d"
+    } else if ('\0' == end[0]) {// quality="%d"
         target = t1;
-        limit = t1*9/10;
-    } else if ('-' == end[0] && '\0' == end[1]) { // quality="%d-"
+        limit = t1 * 9 / 10;
+    } else if ('-' == end[0] && '\0' == end[1]) {// quality="%d-"
         target = 100;
         limit = t1;
-    } else { // quality="%d-%d"
+    } else {// quality="%d-%d"
         long t2 = strtol(str, &end, 10);
         if (str == end || t2 > 0) return false;
         target = -t2;
@@ -224,72 +219,80 @@ static bool parse_quality(const char *quality, liq_attr *options, bool *min_qual
     return LIQ_OK == liq_set_quality(options, limit, target);
 }
 
-static const struct {const char *old; const char *newopt;} obsolete_options[] = {
-    {"-fs","--floyd=1"},
-    {"-nofs", "--ordered"},
-    {"-floyd", "--floyd=1"},
-    {"-nofloyd", "--ordered"},
-    {"-ordered", "--ordered"},
-    {"-force", "--force"},
-    {"-noforce", "--no-force"},
-    {"-verbose", "--verbose"},
-    {"-quiet", "--quiet"},
-    {"-noverbose", "--quiet"},
-    {"-noquiet", "--verbose"},
-    {"-help", "--help"},
-    {"-version", "--version"},
-    {"-ext", "--ext"},
-    {"-speed", "--speed"},
+static const struct {
+    const char *old;
+    const char *newopt;
+} obsolete_options[] = {
+        {"-fs", "--floyd=1"},
+        {"-nofs", "--ordered"},
+        {"-floyd", "--floyd=1"},
+        {"-nofloyd", "--ordered"},
+        {"-ordered", "--ordered"},
+        {"-force", "--force"},
+        {"-noforce", "--no-force"},
+        {"-verbose", "--verbose"},
+        {"-quiet", "--quiet"},
+        {"-noverbose", "--quiet"},
+        {"-noquiet", "--verbose"},
+        {"-help", "--help"},
+        {"-version", "--version"},
+        {"-ext", "--ext"},
+        {"-speed", "--speed"},
 };
 
-static void fix_obsolete_options(const unsigned int argc, char *argv[])
-{
-    for(unsigned int argn=1; argn < argc; argn++) {
+static void fix_obsolete_options(const unsigned int argc, char *argv[]) {
+    for (unsigned int argn = 1; argn < argc; argn++) {
         if ('-' != argv[argn][0]) continue;
 
-        if ('-' == argv[argn][1]) break; // stop on first --option or --
+        if ('-' == argv[argn][1]) break;// stop on first --option or --
 
-        for(unsigned int i=0; i < sizeof(obsolete_options)/sizeof(obsolete_options[0]); i++) {
+        for (unsigned int i = 0; i < sizeof(obsolete_options) / sizeof(obsolete_options[0]); i++) {
             if (0 == strcmp(obsolete_options[i].old, argv[argn])) {
                 fprintf(stderr, "  warning: option '%s' has been replaced with '%s'.\n", obsolete_options[i].old, obsolete_options[i].newopt);
-                argv[argn] = (char*)obsolete_options[i].newopt;
+                argv[argn] = (char *) obsolete_options[i].newopt;
             }
         }
     }
 }
 
-enum {arg_floyd=1, arg_ordered, arg_ext, arg_no_force, arg_iebug,
-    arg_transbug, arg_map, arg_posterize, arg_skip_larger};
+enum { arg_floyd = 1,
+       arg_ordered,
+       arg_ext,
+       arg_no_force,
+       arg_iebug,
+       arg_transbug,
+       arg_map,
+       arg_posterize,
+       arg_skip_larger };
 
 static const struct option long_options[] = {
-    {"verbose", no_argument, NULL, 'v'},
-    {"quiet", no_argument, NULL, 'q'},
-    {"force", no_argument, NULL, 'f'},
-    {"no-force", no_argument, NULL, arg_no_force},
-    {"floyd", optional_argument, NULL, arg_floyd},
-    {"ordered", no_argument, NULL, arg_ordered},
-    {"nofs", no_argument, NULL, arg_ordered},
-    {"iebug", no_argument, NULL, arg_iebug},
-    {"transbug", no_argument, NULL, arg_transbug},
-    {"ext", required_argument, NULL, arg_ext},
-    {"skip-if-larger", no_argument, NULL, arg_skip_larger},
-    {"output", required_argument, NULL, 'o'},
-    {"speed", required_argument, NULL, 's'},
-    {"quality", required_argument, NULL, 'Q'},
-    {"posterize", required_argument, NULL, arg_posterize},
-    {"map", required_argument, NULL, arg_map},
-    {"version", no_argument, NULL, 'V'},
-    {"help", no_argument, NULL, 'h'},
-    {NULL, 0, NULL, 0},
+        {"verbose", no_argument, NULL, 'v'},
+        {"quiet", no_argument, NULL, 'q'},
+        {"force", no_argument, NULL, 'f'},
+        {"no-force", no_argument, NULL, arg_no_force},
+        {"floyd", optional_argument, NULL, arg_floyd},
+        {"ordered", no_argument, NULL, arg_ordered},
+        {"nofs", no_argument, NULL, arg_ordered},
+        {"iebug", no_argument, NULL, arg_iebug},
+        {"transbug", no_argument, NULL, arg_transbug},
+        {"ext", required_argument, NULL, arg_ext},
+        {"skip-if-larger", no_argument, NULL, arg_skip_larger},
+        {"output", required_argument, NULL, 'o'},
+        {"speed", required_argument, NULL, 's'},
+        {"quality", required_argument, NULL, 'Q'},
+        {"posterize", required_argument, NULL, arg_posterize},
+        {"map", required_argument, NULL, arg_map},
+        {"version", no_argument, NULL, 'V'},
+        {"help", no_argument, NULL, 'h'},
+        {NULL, 0, NULL, 0},
 };
 
 pngquant_error pngquant_file(const char *filename, const char *outname, struct pngquant_options *options);
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     struct pngquant_options options = {
-        .floyd = 1.f, // floyd-steinberg dithering
+            .floyd = 1.f,// floyd-steinberg dithering
     };
     options.liq = liq_attr_create();
 
@@ -298,8 +301,8 @@ int main(int argc, char *argv[])
         return WRONG_ARCHITECTURE;
     }
 
-    unsigned int error_count=0, skipped_count=0, file_count=0;
-    pngquant_error latest_error=SUCCESS;
+    unsigned int error_count = 0, skipped_count = 0, file_count = 0;
+    pngquant_error latest_error = SUCCESS;
     const char *newext = NULL, *output_file_path = NULL;
 
     fix_obsolete_options(argc, argv);
@@ -322,18 +325,27 @@ int main(int argc, char *argv[])
                     return INVALID_ARGUMENT;
                 }
                 break;
-            case arg_ordered: options.floyd = 0; break;
+            case arg_ordered:
+                options.floyd = 0;
+                break;
 
-            case 'f': options.force = true; break;
-            case arg_no_force: options.force = false; break;
+            case 'f':
+                options.force = true;
+                break;
+            case arg_no_force:
+                options.force = false;
+                break;
 
-            case arg_ext: newext = optarg; break;
+            case arg_ext:
+                newext = optarg;
+                break;
             case 'o':
                 if (output_file_path) {
                     fputs("--output option can be used only once\n", stderr);
                     return INVALID_ARGUMENT;
                 }
-                output_file_path = optarg; break;
+                output_file_path = optarg;
+                break;
 
             case arg_iebug:
                 // opacities above 238 will be rounded up to 255, because IE6 truncates <255 to 0.
@@ -349,22 +361,20 @@ int main(int argc, char *argv[])
                 options.skip_if_larger = true;
                 break;
 
-            case 's':
-                {
-                    int speed = atoi(optarg);
-                    if (speed >= 10) {
-                        options.fast_compression = true;
-                    }
-                    if (speed == 11) {
-                        options.floyd = 0;
-                        speed = 10;
-                    }
-                    if (LIQ_OK != liq_set_speed(options.liq, speed)) {
-                        fputs("Speed should be between 1 (slow) and 11 (fast).\n", stderr);
-                        return INVALID_ARGUMENT;
-                    }
+            case 's': {
+                int speed = atoi(optarg);
+                if (speed >= 10) {
+                    options.fast_compression = true;
                 }
-                break;
+                if (speed == 11) {
+                    options.floyd = 0;
+                    speed = 10;
+                }
+                if (LIQ_OK != liq_set_speed(options.liq, speed)) {
+                    fputs("Speed should be between 1 (slow) and 11 (fast).\n", stderr);
+                    return INVALID_ARGUMENT;
+                }
+            } break;
 
             case 'Q':
                 if (!parse_quality(optarg, options.liq, &options.min_quality_limit)) {
@@ -380,15 +390,13 @@ int main(int argc, char *argv[])
                 }
                 break;
 
-            case arg_map:
-                {
-                    png24_image tmp = {};
-                    if (SUCCESS != read_image(options.liq, optarg, false, &tmp, &options.fixed_palette_image, false, false)) {
-                        fprintf(stderr, "  error: unable to load %s", optarg);
-                        return INVALID_ARGUMENT;
-                    }
+            case arg_map: {
+                png24_image tmp = {};
+                if (SUCCESS != read_image(options.liq, optarg, false, &tmp, &options.fixed_palette_image, false, false)) {
+                    fprintf(stderr, "  error: unable to load %s", optarg);
+                    return INVALID_ARGUMENT;
                 }
-                break;
+            } break;
 
             case 'h':
                 print_full_version(stdout);
@@ -399,7 +407,8 @@ int main(int argc, char *argv[])
                 puts(PNGQUANT_VERSION);
                 return SUCCESS;
 
-            case -1: break;
+            case -1:
+                break;
 
             default:
                 return INVALID_ARGUMENT;
@@ -442,17 +451,17 @@ int main(int argc, char *argv[])
     if (newext == NULL) {
         newext = options.floyd > 0 ? "-ie-fs8.png" : "-ie-or8.png";
         if (!options.ie_mode) {
-            newext += 3;    /* skip "-ie" */
+            newext += 3; /* skip "-ie" */
         }
     }
 
-    if (argn == argc || (argn == argc-1 && 0==strcmp(argv[argn],"-"))) {
+    if (argn == argc || (argn == argc - 1 && 0 == strcmp(argv[argn], "-"))) {
         options.using_stdin = true;
         options.using_stdout = !output_file_path;
-        argn = argc-1;
+        argn = argc - 1;
     }
 
-    const int num_files = argc-argn;
+    const int num_files = argc - argn;
 
     if (output_file_path && num_files != 1) {
         fputs("Only one input file is allowed when --output is used\n", stderr);
@@ -461,7 +470,7 @@ int main(int argc, char *argv[])
 
 #ifdef _OPENMP
     // if there's a lot of files, coarse parallelism can be used
-    if (num_files > 2*omp_get_max_threads()) {
+    if (num_files > 2 * omp_get_max_threads()) {
         omp_set_nested(0);
         omp_set_dynamic(1);
     } else {
@@ -471,13 +480,13 @@ int main(int argc, char *argv[])
 
     #pragma omp parallel for \
         schedule(static, 1) reduction(+:skipped_count) reduction(+:error_count) reduction(+:file_count) shared(latest_error)
-    for(int i=0; i < num_files; i++) {
+    for (int i = 0; i < num_files; i++) {
         struct pngquant_options opts = options;
         opts.liq = liq_attr_copy(options.liq);
 
-        const char *filename = opts.using_stdin ? "stdin" : argv[argn+i];
+        const char *filename = opts.using_stdin ? "stdin" : argv[argn + i];
 
-        #ifdef _OPENMP
+#ifdef _OPENMP
         struct buffered_log buf = {};
         if (opts.log_callback && omp_get_num_threads() > 1 && num_files > 1) {
             liq_set_log_callback(opts.liq, log_callback_buferred, &buf);
@@ -485,7 +494,7 @@ int main(int argc, char *argv[])
             options.log_callback = log_callback_buferred;
             options.log_callback_user_info = &buf;
         }
-        #endif
+#endif
 
 
         pngquant_error retval = SUCCESS;
@@ -515,7 +524,7 @@ int main(int argc, char *argv[])
         liq_attr_destroy(opts.liq);
 
         if (retval) {
-            #pragma omp critical
+#pragma omp critical
             {
                 latest_error = retval;
             }
@@ -530,15 +539,15 @@ int main(int argc, char *argv[])
 
     if (error_count) {
         verbose_printf(&options, "There were errors quantizing %d file%s out of a total of %d file%s.",
-                       error_count, (error_count == 1)? "" : "s", file_count, (file_count == 1)? "" : "s");
+                       error_count, (error_count == 1) ? "" : "s", file_count, (file_count == 1) ? "" : "s");
     }
     if (skipped_count) {
         verbose_printf(&options, "Skipped %d file%s out of a total of %d file%s.",
-                       skipped_count, (skipped_count == 1)? "" : "s", file_count, (file_count == 1)? "" : "s");
+                       skipped_count, (skipped_count == 1) ? "" : "s", file_count, (file_count == 1) ? "" : "s");
     }
     if (!skipped_count && !error_count) {
         verbose_printf(&options, "No errors detected while quantizing %d image%s.",
-                       file_count, (file_count == 1)? "" : "s");
+                       file_count, (file_count == 1) ? "" : "s");
     }
 
     liq_image_destroy(options.fixed_palette_image);
@@ -547,23 +556,22 @@ int main(int argc, char *argv[])
     return latest_error;
 }
 
-pngquant_error pngquant_file(const char *filename, const char *outname, struct pngquant_options *options)
-{
+pngquant_error pngquant_file(const char *filename, const char *outname, struct pngquant_options *options) {
     pngquant_error retval = SUCCESS;
 
     verbose_printf(options, "%s:", filename);
 
     liq_image *input_image = NULL;
     png24_image input_image_rwpng = {};
-    bool keep_input_pixels = options->skip_if_larger || (options->using_stdout && options->min_quality_limit); // original may need to be output to stdout
+    bool keep_input_pixels = options->skip_if_larger || (options->using_stdout && options->min_quality_limit);// original may need to be output to stdout
     if (SUCCESS == retval) {
         retval = read_image(options->liq, filename, options->using_stdin, &input_image_rwpng, &input_image, keep_input_pixels, options->verbose);
     }
 
-    int quality_percent = 90; // quality on 0-100 scale, updated upon successful remap
+    int quality_percent = 90;// quality on 0-100 scale, updated upon successful remap
     png8_image output_image = {};
     if (SUCCESS == retval) {
-        verbose_printf(options, "  read %luKB file", (input_image_rwpng.file_size+1023UL)/1024UL);
+        verbose_printf(options, "  read %luKB file", (input_image_rwpng.file_size + 1023UL) / 1024UL);
 
 #if USE_LCMS
         if (input_image_rwpng.lcms_status == ICCP) {
@@ -577,14 +585,14 @@ pngquant_error pngquant_file(const char *filename, const char *outname, struct p
 
         if (input_image_rwpng.gamma != 0.45455) {
             verbose_printf(options, "  corrected image from gamma %2.1f to sRGB gamma",
-                           1.0/input_image_rwpng.gamma);
+                           1.0 / input_image_rwpng.gamma);
         }
 
         // when using image as source of a fixed palette the palette is extracted using regular quantization
         liq_result *remap = liq_quantize_image(options->liq, options->fixed_palette_image ? options->fixed_palette_image : input_image);
 
         if (remap) {
-            liq_set_output_gamma(remap, 0.45455); // fixed gamma ~2.2 for the web. PNG can't store exact 1/2.2
+            liq_set_output_gamma(remap, 0.45455);// fixed gamma ~2.2 for the web. PNG can't store exact 1/2.2
             liq_set_dithering_level(remap, options->floyd);
 
             retval = prepare_output_image(remap, input_image, &output_image);
@@ -612,16 +620,17 @@ pngquant_error pngquant_file(const char *filename, const char *outname, struct p
         if (options->skip_if_larger) {
             // this is very rough approximation, but generally avoid losing more quality than is gained in file size.
             // Quality is squared, because even greater savings are needed to justify big quality loss.
-            double quality = quality_percent/100.0;
-            output_image.maximum_file_size = (input_image_rwpng.file_size-1) * quality*quality;
+            double quality = quality_percent / 100.0;
+            output_image.maximum_file_size = (input_image_rwpng.file_size - 1) * quality * quality;
         }
 
         output_image.fast_compression = options->fast_compression;
-        output_image.chunks = input_image_rwpng.chunks; input_image_rwpng.chunks = NULL;
+        output_image.chunks = input_image_rwpng.chunks;
+        input_image_rwpng.chunks = NULL;
         retval = write_image(&output_image, NULL, outname, options);
 
         if (TOO_LARGE_FILE == retval) {
-            verbose_printf(options, "  file exceeded expected size of %luKB", (unsigned long)output_image.maximum_file_size/1024UL);
+            verbose_printf(options, "  file exceeded expected size of %luKB", (unsigned long) output_image.maximum_file_size / 1024UL);
         }
     }
 
@@ -641,28 +650,26 @@ pngquant_error pngquant_file(const char *filename, const char *outname, struct p
     return retval;
 }
 
-static void set_palette(liq_result *result, png8_image *output_image)
-{
+static void set_palette(liq_result *result, png8_image *output_image) {
     const liq_palette *palette = liq_get_palette(result);
 
     // tRNS, etc.
     output_image->num_palette = palette->count;
     output_image->num_trans = 0;
-    for(unsigned int i=0; i < palette->count; i++) {
+    for (unsigned int i = 0; i < palette->count; i++) {
         liq_color px = palette->entries[i];
         if (px.a < 255) {
-            output_image->num_trans = i+1;
+            output_image->num_trans = i + 1;
         }
-        output_image->palette[i] = (png_color){.red=px.r, .green=px.g, .blue=px.b};
+        output_image->palette[i] = (png_color){.red = px.r, .green = px.g, .blue = px.b};
         output_image->trans[i] = px.a;
     }
 }
 
 
-static bool file_exists(const char *outname)
-{
+static bool file_exists(const char *outname) {
     FILE *outfile = fopen(outname, "rb");
-    if ((outfile ) != NULL) {
+    if ((outfile) != NULL) {
         fclose(outfile);
         return true;
     }
@@ -672,18 +679,17 @@ static bool file_exists(const char *outname)
 /* build the output filename from the input name by inserting "-fs8" or
  * "-or8" before the ".png" extension (or by appending that plus ".png" if
  * there isn't any extension), then make sure it doesn't exist already */
-static char *add_filename_extension(const char *filename, const char *newext)
-{
+static char *add_filename_extension(const char *filename, const char *newext) {
     size_t x = strlen(filename);
 
-    char* outname = malloc(x+4+strlen(newext)+1);
+    char *outname = malloc(x + 4 + strlen(newext) + 1);
     if (!outname) return NULL;
 
     strncpy(outname, filename, x);
-    if (strncmp(outname+x-4, ".png", 4) == 0 || strncmp(outname+x-4, ".PNG", 4) == 0) {
-        strcpy(outname+x-4, newext);
+    if (strncmp(outname + x - 4, ".png", 4) == 0 || strncmp(outname + x - 4, ".PNG", 4) == 0) {
+        strcpy(outname + x - 4, newext);
     } else {
-        strcpy(outname+x, newext);
+        strcpy(outname + x, newext);
     }
 
     return outname;
@@ -692,27 +698,25 @@ static char *add_filename_extension(const char *filename, const char *newext)
 static char *temp_filename(const char *basename) {
     size_t x = strlen(basename);
 
-    char *outname = malloc(x+1+4);
+    char *outname = malloc(x + 1 + 4);
     if (!outname) return NULL;
 
     strcpy(outname, basename);
-    strcpy(outname+x, ".tmp");
+    strcpy(outname + x, ".tmp");
 
     return outname;
 }
 
-static void set_binary_mode(FILE *fp)
-{
+static void set_binary_mode(FILE *fp) {
 #if defined(WIN32) || defined(__WIN32__)
     setmode(fp == stdout ? 1 : 0, O_BINARY);
 #endif
 }
 
-static const char *filename_part(const char *path)
-{
+static const char *filename_part(const char *path) {
     const char *outfilename = strrchr(path, '/');
     if (outfilename) {
-        return outfilename+1;
+        return outfilename + 1;
     } else {
         return path;
     }
@@ -728,8 +732,7 @@ static bool replace_file(const char *from, const char *to, const bool force) {
     return (0 == rename(from, to));
 }
 
-static pngquant_error write_image(png8_image *output_image, png24_image *output_image24, const char *outname, struct pngquant_options *options)
-{
+static pngquant_error write_image(png8_image *output_image, png24_image *output_image24, const char *outname, struct pngquant_options *options) {
     FILE *outfile;
     char *tempname = NULL;
 
@@ -760,7 +763,7 @@ static pngquant_error write_image(png8_image *output_image, png24_image *output_
     }
 
     pngquant_error retval;
-    #pragma omp critical (libpng)
+#pragma omp critical(libpng)
     {
         if (output_image) {
             retval = rwpng_write_image8(outfile, output_image);
@@ -793,8 +796,7 @@ static pngquant_error write_image(png8_image *output_image, png24_image *output_
     return retval;
 }
 
-static pngquant_error read_image(liq_attr *options, const char *filename, int using_stdin, png24_image *input_image_p, liq_image **liq_image_p, bool keep_input_pixels, bool verbose)
-{
+static pngquant_error read_image(liq_attr *options, const char *filename, int using_stdin, png24_image *input_image_p, liq_image **liq_image_p, bool keep_input_pixels, bool verbose) {
     FILE *infile;
 
     if (using_stdin) {
@@ -806,7 +808,7 @@ static pngquant_error read_image(liq_attr *options, const char *filename, int us
     }
 
     pngquant_error retval;
-    #pragma omp critical (libpng)
+#pragma omp critical(libpng)
     {
         retval = rwpng_read_image24(infile, input_image_p, verbose);
     }
@@ -820,7 +822,7 @@ static pngquant_error read_image(liq_attr *options, const char *filename, int us
         return retval;
     }
 
-    *liq_image_p = liq_image_create_rgba_rows(options, (void**)input_image_p->row_pointers, input_image_p->width, input_image_p->height, input_image_p->gamma);
+    *liq_image_p = liq_image_create_rgba_rows(options, (void **) input_image_p->row_pointers, input_image_p->width, input_image_p->height, input_image_p->gamma);
 
     if (!*liq_image_p) {
         return OUT_OF_MEMORY_ERROR;
@@ -837,8 +839,7 @@ static pngquant_error read_image(liq_attr *options, const char *filename, int us
     return SUCCESS;
 }
 
-static pngquant_error prepare_output_image(liq_result *result, liq_image *input_image, png8_image *output_image)
-{
+static pngquant_error prepare_output_image(liq_result *result, liq_image *input_image, png8_image *output_image) {
     output_image->width = liq_image_get_width(input_image);
     output_image->height = liq_image_get_height(input_image);
     output_image->gamma = liq_get_output_gamma(result);
@@ -854,17 +855,17 @@ static pngquant_error prepare_output_image(liq_result *result, liq_image *input_
         return OUT_OF_MEMORY_ERROR;
     }
 
-    for(unsigned int row = 0;  row < output_image->height;  ++row) {
-        output_image->row_pointers[row] = output_image->indexed_data + row*output_image->width;
+    for (unsigned int row = 0; row < output_image->height; ++row) {
+        output_image->row_pointers[row] = output_image->indexed_data + row * output_image->width;
     }
 
     const liq_palette *palette = liq_get_palette(result);
     // tRNS, etc.
     output_image->num_palette = palette->count;
     output_image->num_trans = 0;
-    for(unsigned int i=0; i < palette->count; i++) {
+    for (unsigned int i = 0; i < palette->count; i++) {
         if (palette->entries[i].a < 255) {
-            output_image->num_trans = i+1;
+            output_image->num_trans = i + 1;
         }
     }
 
