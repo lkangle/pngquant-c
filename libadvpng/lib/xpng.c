@@ -30,7 +30,7 @@
 
 #include "portable.h"
 
-#include "png.h"
+#include "xpng.h"
 #include "endianrw.h"
 #include "error.h"
 

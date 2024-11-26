@@ -71,6 +71,7 @@ use --force to overwrite. See man page for full list of options.\n"
 #include <stdbool.h>
 #include <getopt.h>
 #include <unistd.h>
+#include "advpng.h"
 
 extern char *optarg;
 extern int optind, opterr;
@@ -503,6 +504,10 @@ int main(int argc, char *argv[])
 
         if (SUCCESS == retval) {
             retval = pngquant_file(filename, outname, &opts);
+        }
+
+        if (SUCCESS == retval) {
+            retval = rezip_png_file(outname, 1, 1);
         }
 
         free(outname_free);

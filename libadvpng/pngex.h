@@ -24,7 +24,7 @@
 #include "adv-compress.h"
 #include "data.h"
 
-#include "lib/png.h"
+#include "lib/xpng.h"
 #include "lib/error.h"
 
 #ifdef __cplusplus

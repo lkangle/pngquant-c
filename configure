@@ -409,6 +409,11 @@ else
     status "lcms2" "no"
 fi
 
+# libadvpng
+if ! find_static "advpng" "advpng.h" "libadvpng.a"; then
+    error "advpng" "not found"
+fi
+
 echo
 
 # As of GCC 4.5, 387 fp math is significantly slower in C99 mode without this.

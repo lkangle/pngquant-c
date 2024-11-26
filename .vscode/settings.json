@@ -7,6 +7,9 @@
     "files.associations": {
         "rwpng.h": "c",
         "setjmp.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "advpng.h": "c",
+        "unistd.h": "c",
+        "png.h": "c"
     }
 }
