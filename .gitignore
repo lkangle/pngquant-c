@@ -5,7 +5,6 @@ build
 *.mk
 .DS_Store
 pngquant
-.deps
 *.exe
 !output/*
 *-fs8.png
@@ -21,4 +20,16 @@ pngquant
 *.la
 *.lai
 *.vers
-.libs
+
+.deps
+libpng-1.6.17/.libs
+libpng-1.6.17/config.h
+libpng-1.6.17/config.status
+libpng-1.6.17/libpng-config
+libpng-1.6.17/libpng16-config
+libpng-1.6.17/libtool
+libpng-1.6.17/Makefile
+libpng-1.6.17/pnglibconf.c
+libpng-1.6.17/pnglibconf.h
+libpng-1.6.17/pngprefix.h
+libpng-1.6.17/stamp-h1

@@ -27,4 +27,4 @@ windows
 bg1 --> 314,735字节 307.36KB
 bg2 --> 1,002,124字节  978.64KB
 
-time ./pngquant -f --quality=40-98 --speed=1 --floyd=1 ./bg1.png
+time ./pngquant -f --quality=10-98 --speed=3 --floyd=1 ./bg1.png

@@ -6,12 +6,14 @@ CMAKE=cmake
 MAKE=make
 CC=gcc
 SIMD_OPTION="--enable-sse"
+CGEN="Unix Makefiles"
 
 OS=$(uname -s)
 LIB_SUFFIX=(".a" ".so" ".dylib")
 
 if [[ "$OS" == "MINGW"* ]]; then
     MAKE="mingw32-make"
+    CGEN="MinGW Makefiles"
     echo "===> Windows: ${MAKE}"
 elif [[ "$OS" == "Darwin" ]]; then
     CC=gcc-14
@@ -65,7 +67,7 @@ fi
 if [[ "$ADVPNG_FOUND" -ne 1 ]]; then
     cd $ROOT/libadvpng
     rm -fr build
-    $CMAKE -S . -B build
+    $CMAKE -G "${CGEN}" -S . -B build
     cd build
     $MAKE
 fi
