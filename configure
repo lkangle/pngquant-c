@@ -289,7 +289,7 @@ echo "#ifdef _OPENMP
 if [ -n "$OPENMP" ]; then
     if "$CC" -xc -E -fopenmp "$OMP_TMP" 2>&1 | grep -q "omp_get_thread_num"; then
         cflags "-fopenmp"
-        lflags "-fopenmp"
+        lflags "-fopenmp -static-libgcc"
         status "OpenMP" "yes"
     else
         rm -f "$OMP_TMP"
