@@ -10,7 +10,7 @@ pngquant
 *-fs8.png
 *.h.included
 
-*.so 
+*.so
 *.lo
 *.so.*
 *.log
